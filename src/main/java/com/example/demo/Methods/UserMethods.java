@@ -19,4 +19,6 @@ public interface UserMethods {
     public Location getLocation(Integer id);
     public  String Alert(Integer id);
     public List<Long> callSos(Integer id);
+    public String SecureStep(Integer id);
+    public List<Location> sos(Integer id);
 }

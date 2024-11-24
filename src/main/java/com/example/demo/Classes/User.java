@@ -29,7 +29,7 @@ public class User {
     private boolean SecureStep;
     private String zone;
     private String password;
-    @OneToOne
+    @ManyToOne
     private Location location;
     @OneToMany
     @JsonIgnore

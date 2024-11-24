@@ -2,10 +2,7 @@ package com.example.demo.Implementation;
 
 import com.example.demo.Classes.*;
 import com.example.demo.Controllers.UserController;
-import com.example.demo.Database.FeedbackRepo;
-import com.example.demo.Database.ReviewRepo;
-import com.example.demo.Database.SosCallsRepo;
-import com.example.demo.Database.UserRepo;
+import com.example.demo.Database.*;
 import com.example.demo.Methods.UserMethods;
 import com.example.demo.config.JwtProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +20,8 @@ public class UserImplementation implements UserMethods {
     FeedbackRepo feedbackRepo;
     @Autowired
     SosCallsRepo sosCallsRepo;
+    @Autowired
+    LocationRepo locationRepo;
     public User getFromJwt(String jwt){
         String email= JwtProvider.getEmailFromJwt(jwt);
         return userRepo.searchByEmail(email);
@@ -80,7 +79,11 @@ public class UserImplementation implements UserMethods {
         review1.setUpvote(0);
         review1.setId(review.getId());
         review1.setDownvote(0);
+        List<Review> temp=user.getReviews();
+        temp.add(review1);
+        user.setReviews(temp);
         reviewRepo.save(review1);
+        userRepo.save(user);
         return review1;
     }
 
@@ -93,6 +96,10 @@ public class UserImplementation implements UserMethods {
         feedback1.setFeedback(feedback.getFeedback());
         feedback1.setId(feedback.getId());
         feedbackRepo.save(feedback1);
+        List<Feedback> temp=user.getFeedbacks();
+        temp.add(feedback1);
+        user.setFeedbacks(temp);
+        userRepo.save(user);
         return feedback1;
     }
 
@@ -117,12 +124,14 @@ public class UserImplementation implements UserMethods {
     @Override
     public String Alert(Integer id) {
         User user=userRepo.getReferenceById(id);
+        if(user.isSecureStep()){
         SosCalls sosCalls=sosCallsRepo.searchFromUSerId(id);
         if(user.getZone().equalsIgnoreCase("RED")){
             if(sosCalls.getAlertCounts()==2)
                 callSos(id);
             else {
                 sosCalls.setAlertCounts(sosCalls.getAlertCounts()+1);
+                sosCallsRepo.save(sosCalls);
                 return "Alert no " + sosCalls.getAlertCounts() + 1 + "Please beware,You are Currently in high risk zone!!!";
             }
         } else if (user.getZone().equalsIgnoreCase("Yellow")) {
@@ -130,10 +139,13 @@ public class UserImplementation implements UserMethods {
                 callSos(id);
             else {
                 sosCalls.setAlertCounts(sosCalls.getAlertCounts() + 1);
+                sosCallsRepo.save(sosCalls);
                 return "Alert no " + sosCalls.getAlertCounts() + 1 + "Please take care,You are Currently in risk zone!!!";
             }
 
         }
+        }
+
         return null;
     }
 
@@ -141,5 +153,27 @@ public class UserImplementation implements UserMethods {
     public List<Long> callSos(Integer id) {
         User user=userRepo.getReferenceById(id);
         return user.getSos().getSos();
+    }
+
+    @Override
+    public String SecureStep(Integer id) {
+        User user=userRepo.getReferenceById(id);
+        if(user.isSecureStep()) {
+            user.setSecureStep(false);
+            locationRepo.deleteByUserId(id);
+            userRepo.save(user);
+
+            return "Secure Step is turned Off";
+        }
+        else{
+            user.setSecureStep(true);
+            userRepo.save(user);
+            return "Secure step is turned On";
+        }
+    }
+
+    @Override
+    public List<Location> sos(Integer id) {
+        return locationRepo.findLocationByUserId(id);
     }
 }

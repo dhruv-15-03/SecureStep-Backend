@@ -5,6 +5,7 @@ import com.example.demo.Classes.Review;
 import com.example.demo.Classes.User;
 import com.example.demo.Classes.Location;
 import com.example.demo.Database.FeedbackRepo;
+import com.example.demo.Database.LocationRepo;
 import com.example.demo.Database.ReviewRepo;
 import com.example.demo.Database.UserRepo;
 import com.example.demo.Implementation.UserImplementation;
@@ -24,6 +25,8 @@ public class UserController {
     ReviewRepo reviewRepo;
     @Autowired
     FeedbackRepo feedbackRepo;
+    @Autowired
+    LocationRepo locationRepo;
     @PutMapping("/update")
     public User update(@RequestHeader("Authorization") String jwt, @RequestBody User user) throws Exception {
         User main=userImplementation.getFromJwt(jwt);
@@ -43,6 +46,11 @@ public class UserController {
         User user=userImplementation.getFromJwt(jwt);
         user.setLocation(location);
         userRepo.save(user);
+        Location temp=new Location();
+        temp.setLatitude(location.getLatitude());
+        temp.setLongitude(location.getLongitude());
+        temp.setUserId(user.getId());
+        locationRepo.save(temp);
         return user.getLocation();
     }
 
@@ -78,5 +86,15 @@ public class UserController {
     public List<Long> callSosChoice(@RequestHeader("Authorization") String jwt){
         User user=userImplementation.getFromJwt(jwt);
         return userImplementation.callSos(user.getId());
+    }
+    @GetMapping("/SecureStep")
+    public String step(@RequestHeader("Authorization") String jwt){
+        User user=userImplementation.getFromJwt(jwt);
+        return userImplementation.SecureStep(user.getId());
+    }
+    @GetMapping("/sos")
+    public List<Location> sos(@RequestHeader("Authorization") String jwt){
+        User user=userImplementation.getFromJwt(jwt);
+        return userImplementation.sos(user.getId());
     }
 }
